@@ -26,7 +26,7 @@ jobs:
         run: uvx yamllint .
 
       - name: Install Ansible requirements
-        run: uvx --from ansible-core ansible-galaxy install -r requirements.yml
+        run: uvx --from ansible-core ansible-galaxy install -r molecule/default/collections.yml
 
       - name: Lint Ansible files
         run: uvx ansible-lint .
