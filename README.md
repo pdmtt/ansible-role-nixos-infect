@@ -13,6 +13,7 @@ As of 2026-03, the original script had a bug whose [fix](https://github.com/elit
 yet. I intend on forking the repo, adding CICD workflows, and opening a pull request, in order to help the original
 author to deliver faster and with quality assurements.
 
-### Why not nixos-anywhere?
+### Why not [nixos-anywhere](https://github.com/nix-community/nixos-anywhere)?
 
-It depends on Nix.
+It depends on Nix being installed on the control machine. This is an alternative method that can be used by those who
+don't want to or can't install new dependencies.

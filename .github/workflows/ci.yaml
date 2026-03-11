@@ -47,3 +47,5 @@ jobs:
         run: uvx --with ansible --with requests --with python-dateutil molecule test
         env:
           HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
+          PY_COLORS: "1"
+          ANSIBLE_FORCE_COLOR: "1"
