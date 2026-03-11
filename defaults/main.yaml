@@ -1,0 +1,3 @@
+---
+# see more about Nix channels at https://nixos.wiki/wiki/Nix_channels
+nixos_infect_channel: "nixos-25.11"

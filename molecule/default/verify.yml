@@ -1,0 +1,34 @@
+---
+- name: Verify NixOS conversion
+  hosts: all
+  gather_facts: false
+  pre_tasks:
+    - name: Check for converge success marker
+      ansible.builtin.stat:
+        path: "{{ molecule_ephemeral_directory }}/converge_done"
+      register: converge_marker
+      delegate_to: localhost
+
+    - name: Interrupt verify if converge did not complete
+      ansible.builtin.meta: end_play
+      when: not converge_marker.stat.exists
+
+  tasks:
+    - name: Wait for SSH port to become available after reboot
+      ansible.builtin.wait_for:
+        host: "{{ ansible_host }}"
+        port: 22
+        timeout: 180
+        state: started
+      delegate_to: localhost
+
+    - name: Read /etc/os-release from the new OS
+      ansible.builtin.raw: cat /etc/os-release
+      register: os_release
+      changed_when: false
+
+    - name: Assert the system is running NixOS
+      ansible.builtin.assert:
+        that:
+          - "'nixos' in (os_release.stdout | lower)"
+        fail_msg: "Host is not running NixOS after infect. os-release: {{ os_release.stdout }}"

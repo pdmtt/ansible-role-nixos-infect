@@ -1,0 +1,12 @@
+---
+- name: Run nixos-infect
+  ansible.builtin.script:
+    cmd: "{{ role_path }}/files/nixos-infect.sh"
+  environment:
+    NIX_CHANNEL: "{{ nixos_infect_channel }}"
+  changed_when: true
+  register: nixos_infect_result
+
+- name: Print nixos-infect result
+  ansible.builtin.debug:
+    var: nixos_infect_result

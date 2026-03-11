@@ -1,0 +1,34 @@
+---
+- name: Converge
+  hosts: all
+  gather_facts: false
+
+  pre_tasks:
+    - name: Check if converge success marker already exists
+      ansible.builtin.stat:
+        path: "{{ molecule_ephemeral_directory }}/converge_done"
+      register: converge_marker
+      delegate_to: localhost
+
+    - name: End play if converge already completed
+      ansible.builtin.meta: end_play
+      when: converge_marker.stat.exists
+
+    - name: Gather facts
+      ansible.builtin.setup:
+
+  roles:
+    - role: ansible-role-nixos-infect
+      # The nixos-infect script replaces the OS and triggers a reboot.
+      # Ansible will lose the SSH connection mid-play; ignore_unreachable
+      # prevents Molecule from treating that dropped connection as a failure.
+      ignore_unreachable: true
+
+  tasks:
+    - name: Create converge success marker
+      when: not converge_marker.stat.exists
+      delegate_to: localhost
+      ansible.builtin.file:
+        path: "{{ molecule_ephemeral_directory }}/converge_done"
+        state: touch
+        mode: "0600"

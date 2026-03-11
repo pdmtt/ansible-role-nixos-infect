@@ -1,0 +1,84 @@
+---
+- name: Create Hetzner Cloud instance
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  pre_tasks:
+    - name: Check if Molecule instance config already exists
+      ansible.builtin.stat:
+        path: "{{ molecule_instance_config }}"
+      register: instance_config_stat
+
+    - name: End play if instance config already exists
+      ansible.builtin.meta: end_play
+      when: instance_config_stat.stat.exists
+
+  vars:
+    ssh_key_path: "{{ molecule_ephemeral_directory }}/id_ed25519"
+
+  tasks:
+    - name: Assert HCLOUD_TOKEN env var is set
+      ansible.builtin.assert:
+        that: lookup('env', 'HCLOUD_TOKEN') | length > 0
+        fail_msg: "HCLOUD_TOKEN environment variable must be set."
+
+    - name: Generate unique instance name
+      ansible.builtin.set_fact:
+        instance_name: "nixos-infect-molecule-{{ lookup('community.general.random_string', length=8, special=false, upper=false) }}"
+
+    - name: Set ssh_key_name from instance_name
+      ansible.builtin.set_fact:
+        ssh_key_name: "{{ instance_name }}"
+
+    - name: Generate ephemeral ED25519 SSH keypair
+      ansible.builtin.command:
+        cmd: "ssh-keygen -t ed25519 -N '' -f {{ ssh_key_path }}"
+        creates: "{{ ssh_key_path }}"
+
+    - name: Read generated public key
+      ansible.builtin.slurp:
+        src: "{{ ssh_key_path }}.pub"
+      register: pubkey_slurp
+
+    - name: Upload public key to Hetzner Cloud
+      hetzner.hcloud.ssh_key:
+        name: "{{ ssh_key_name }}"
+        public_key: "{{ pubkey_slurp.content | b64decode | trim }}"
+        state: present
+
+    - name: Create Hetzner Cloud server
+      hetzner.hcloud.server:
+        name: "{{ instance_name }}"
+        server_type: cx23
+        image: ubuntu-22.04
+        location: nbg1
+        ssh_keys:
+          - "{{ ssh_key_name }}"
+        state: started
+      register: hcloud_server
+
+    - name: Wait for SSH to become available
+      ansible.builtin.wait_for:
+        host: "{{ hcloud_server.hcloud_server.ipv4_address }}"
+        port: 22
+        delay: 5
+        timeout: 300
+        state: started
+
+    - name: Build Molecule instance config
+      ansible.builtin.set_fact:
+        instance_config:
+          - instance: nixos-infect-test
+            address: "{{ hcloud_server.hcloud_server.ipv4_address }}"
+            user: root
+            port: 22
+            identity_file: "{{ ssh_key_path }}"
+            hcloud_server_name: "{{ instance_name }}"
+            hcloud_ssh_key_name: "{{ ssh_key_name }}"
+
+    - name: Write Molecule instance config
+      ansible.builtin.copy:
+        dest: "{{ molecule_instance_config }}"
+        mode: "0600"
+        content: "{{ instance_config | to_nice_yaml }}"

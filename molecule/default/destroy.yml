@@ -1,0 +1,43 @@
+---
+- name: Destroy Hetzner Cloud instance
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Assert HCLOUD_TOKEN env var is set
+      ansible.builtin.assert:
+        that: lookup('env', 'HCLOUD_TOKEN') | length > 0
+        fail_msg: "HCLOUD_TOKEN environment variable must be set."
+
+    - name: Slurp Molecule instance config
+      ansible.builtin.slurp:
+        src: "{{ molecule_instance_config }}"
+      register: instance_config_raw
+      when: molecule_instance_config is file
+
+    - name: Parse instance config
+      ansible.builtin.set_fact:
+        instance_config: "{{ instance_config_raw.content | b64decode | from_yaml }}"
+      when: instance_config_raw is not skipped
+
+    - name: Delete Hetzner Cloud server
+      hetzner.hcloud.server:
+        name: "{{ instance_config[0].hcloud_server_name }}"
+        state: absent
+      when:
+        - instance_config is defined
+        - instance_config[0].hcloud_server_name | default('') | length > 0
+
+    - name: Delete Hetzner Cloud SSH key
+      hetzner.hcloud.ssh_key:
+        name: "{{ instance_config[0].hcloud_ssh_key_name }}"
+        state: absent
+      when:
+        - instance_config is defined
+        - instance_config[0].hcloud_ssh_key_name | default('') | length > 0
+
+    - name: Remove Molecule instance config
+      ansible.builtin.file:
+        path: "{{ molecule_instance_config }}"
+        state: absent

@@ -1,0 +1,49 @@
+---
+name: CI
+
+"on":
+  pull_request:
+  push:
+    branches:
+      - main
+env:
+  UV_VERSION: "0.10.9"
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out the codebase
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+
+      - name: Lint YAML files
+        run: uvx yamllint .
+
+      - name: Install Ansible requirements
+        run: uvx --from ansible-core ansible-galaxy install -r requirements.yml
+
+      - name: Lint Ansible files
+        run: uvx ansible-lint .
+
+  molecule:
+    name: Molecule
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out the codebase.
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+
+      - name: Run Molecule tests
+        run: uvx --with ansible --with requests --with python-dateutil molecule test
+        env:
+          HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}

@@ -1,0 +1,30 @@
+---
+dependency:
+  name: galaxy
+
+driver:
+  name: default
+
+platforms:
+  - name: nixos-infect-test
+
+provisioner:
+  name: ansible
+  env:
+    ANSIBLE_HOST_KEY_CHECKING: "false"
+    ANSIBLE_ROLES_PATH: "${MOLECULE_PROJECT_DIRECTORY}/.."
+  playbooks:
+    create: create.yml
+    destroy: destroy.yml
+    converge: converge.yml
+    verify: verify.yml
+
+scenario:
+  # Idempotency is omitted: the role replaces the OS, so a second converge
+  # run is not meaningful.
+  test_sequence:
+    - dependency
+    - create
+    - converge
+    - verify
+    - destroy
