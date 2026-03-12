@@ -1,3 +1,4 @@
 ---
 # see more about Nix channels at https://nixos.wiki/wiki/Nix_channels
 nixos_infect_channel: "nixos-25.11"
+nixos_infect_script_url: "https://raw.githubusercontent.com/pdmtt/nixos-reinfect/95ae63190a0f90ddc3acbc14736eb3ecc06523e4/nixos-infect.sh"
