@@ -4,6 +4,7 @@
     cmd: "{{ role_path }}/files/nixos-infect.sh"
   environment:
     NIX_CHANNEL: "{{ nixos_infect_channel }}"
+    NIXOS_INFECT_SCRIPT_URL: "{{ nixos_infect_script_url }}"
   changed_when: true
   register: nixos_infect_result
 
